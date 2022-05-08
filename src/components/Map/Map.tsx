@@ -2,11 +2,7 @@ import * as React from "react";
 import { MapContainer, TileLayer, Polygon } from "react-leaflet";
 import { Map as LeafletMap, polygon } from "leaflet";
 import "leaflet/dist/leaflet.css";
-import {
-  District,
-  County,
-  AdministrativeArea,
-} from "../../models/AdministrativeArea";
+import { District, County } from "../../models/AdministrativeArea";
 
 const osm = {
   maptiler: {
