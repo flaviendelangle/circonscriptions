@@ -1,19 +1,19 @@
-export type Point = [number, number]
+export type Point = [number, number];
 
-export type Polygon = Point[]
+export type Polygon = Point[];
 
-export type PolygonWithHoles = Polygon[]
+export type PolygonWithHoles = Polygon[];
 
 export interface AdministrativeArea {
-    coordinates: PolygonWithHoles[]
+  coordinates: PolygonWithHoles[];
 }
 
-export interface County extends AdministrativeArea{
-    code: string,
+export interface County extends AdministrativeArea {
+  code: string;
 }
 
 export interface District extends AdministrativeArea {
-    ref: string
-    countyCode: string,
-    districtNumber: number,
+  ref: string;
+  countyCode: string;
+  districtNumber: number;
 }
