@@ -13,7 +13,8 @@ const osm = {
 };
 
 interface MapState {
-  county: County | null;
+  counties: County[] | null;
+  selectedCounty: County | null;
   districts: {
     [countyCode: string]: {
       status: "loading" | "loaded";
@@ -24,7 +25,11 @@ interface MapState {
 
 type MapActions =
   | {
-      type: "setCounty";
+      type: "setCounties";
+      value: County[];
+    }
+  | {
+      type: "setSelectedCounty";
       value: County | null;
     }
   | { type: "setDistrictsLoading"; value: string }
@@ -34,14 +39,19 @@ type MapActions =
     };
 
 const INITIAL_MAP_STATE: MapState = {
-  county: null,
+  counties: null,
+  selectedCounty: null,
   districts: {},
 };
 
 const mapReducer: React.Reducer<MapState, MapActions> = (state, action) => {
   switch (action.type) {
-    case "setCounty": {
-      return { ...state, county: action.value };
+    case "setCounties": {
+      return { ...state, counties: action.value };
+    }
+
+    case "setSelectedCounty": {
+      return { ...state, selectedCounty: action.value };
     }
 
     case "setDistrictsLoading": {
@@ -73,48 +83,63 @@ const mapReducer: React.Reducer<MapState, MapActions> = (state, action) => {
   }
 };
 
-const MapContent = (props: MapProps) => {
-  const { counties, districts } = props;
+const MapContent = () => {
   const map = useMap();
   const [state, dispatch] = React.useReducer(mapReducer, INITIAL_MAP_STATE);
 
   React.useEffect(() => {
+    const fetchCounties = async () => {
+      const response = await window.fetch("/departements.json");
+      const counties: County[] = await response.json();
+      dispatch({ type: "setCounties", value: counties });
+    };
+
+    fetchCounties();
+  }, []);
+
+  React.useEffect(() => {
     const fetchDistricts = async () => {
-      if (state.county == null || state.districts[state.county.code]) {
+      if (
+        state.selectedCounty == null ||
+        state.districts[state.selectedCounty.code]
+      ) {
         return;
       }
 
-      dispatch({ type: "setDistrictsLoading", value: state.county.code });
+      dispatch({
+        type: "setDistrictsLoading",
+        value: state.selectedCounty.code,
+      });
 
       const response = await window.fetch(
-        `/circonscriptions-${state.county.code}.json`
+        `/circonscriptions-${state.selectedCounty.code}.json`
       );
       const districts = await response.json();
 
       dispatch({
         type: "setDistricts",
-        value: { countyCode: state.county.code, districts },
+        value: { countyCode: state.selectedCounty.code, districts },
       });
     };
 
     fetchDistricts();
-  }, [state.county]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [state.selectedCounty]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const districtsToShow = React.useMemo(() => {
-    if (state.county == null) {
+    if (state.selectedCounty == null) {
       return null;
     }
 
-    return state.districts[state.county.code]?.data ?? null;
-  }, [state.county, state.districts]);
+    return state.districts[state.selectedCounty.code]?.data ?? null;
+  }, [state.selectedCounty, state.districts]);
 
   React.useEffect(() => {
-    if (!state.county) {
+    if (!state.selectedCounty) {
       return;
     }
 
-    map.fitBounds(state.county.bounds);
-  }, [state.county]);
+    map.fitBounds(state.selectedCounty.bounds);
+  }, [state.selectedCounty]);
 
   const handleClickAdministrativeAreaShape = React.useCallback(
     <K extends "county" | "district">(
@@ -122,7 +147,7 @@ const MapContent = (props: MapProps) => {
       value: K extends "county" ? County : District
     ) => {
       if (type === "county") {
-        return dispatch({ type: "setCounty", value: value as County });
+        return dispatch({ type: "setSelectedCounty", value: value as County });
       }
     },
     []
@@ -131,7 +156,7 @@ const MapContent = (props: MapProps) => {
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        dispatch({ type: "setCounty", value: null });
+        dispatch({ type: "setSelectedCounty", value: null });
       }
     };
 
@@ -152,8 +177,8 @@ const MapContent = (props: MapProps) => {
           key={district.ref}
         />
       ))}
-      {state.county == null &&
-        counties.map((county) => (
+      {state.selectedCounty == null &&
+        state.counties?.map((county) => (
           <AdministrativeAreaShape
             type="county"
             onClick={handleClickAdministrativeAreaShape}
@@ -165,21 +190,16 @@ const MapContent = (props: MapProps) => {
   );
 };
 
-const Map = (props: MapProps) => {
+const Map = () => {
   return (
     <MapContainer center={{ lat: 46.887455, lng: 2.425491 }} zoom={7}>
       <TileLayer
         url={osm.maptiler.url}
         attribution={osm.maptiler.attribution}
       />
-      <MapContent {...props} />
+      <MapContent />
     </MapContainer>
   );
 };
-
-interface MapProps {
-  counties: County[];
-  districts: District[];
-}
 
 export default Map;
