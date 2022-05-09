@@ -29,15 +29,7 @@ const Home: NextPage = () => {
     const fetchDb = async () => {
       const response = await window.fetch("/departements.json");
       const db = await response.json();
-
-      setCounties(
-        db.features.map((feature) => {
-          return {
-            code: feature.properties.code,
-            coordinates: unifyCoordinates(feature.geometry.coordinates),
-          };
-        })
-      );
+      setCounties(db);
     };
 
     fetchDb();

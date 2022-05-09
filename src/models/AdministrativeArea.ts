@@ -10,6 +10,7 @@ export interface AdministrativeArea {
 
 export interface County extends AdministrativeArea {
   code: string;
+  bounds: [Point, Point];
 }
 
 export interface District extends AdministrativeArea {
